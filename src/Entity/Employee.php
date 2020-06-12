@@ -4,9 +4,10 @@ namespace App\Entity;
 
 use App\Repository\EmployeeRepository;
 use Doctrine\ORM\Mapping as ORM;
+use Symfony\Component\Validator\Constraints as Assert;
 
 /**
- * @ORM\Entity(repositoryClass=EmployeeRepository::class)
+ * @ORM\Entity(repositoryClass="App\Repository\EmployeeRepository", repositoryClass=EmployeeRepository::class)
  */
 class Employee
 {
@@ -19,21 +20,25 @@ class Employee
 
     /**
      * @ORM\Column(type="string", length=255)
+     * @Assert\NotBlank()
      */
     private $firstName;
 
     /**
      * @ORM\Column(type="string", length=255)
+     * @Assert\NotBlank
      */
     private $lastName;
 
     /**
      * @ORM\Column(type="string", length=50)
+     * @Assert\NotBlank
      */
     private $career;
 
     /**
      * @ORM\Column(type="integer")
+     * @Assert\NotBlank
      */
     private $department;
 
@@ -86,6 +91,16 @@ class Employee
     public function setDepartment(int $department): self
     {
         $this->department = $department;
+
+        return $this;
+    }
+
+    public function setUpdateData(Employee $employee): Employee
+    {
+        $this->firstName = $employee->getFirstName();
+        $this->lastName = $employee->getLastName();
+        $this->career = $employee->getCareer();
+        $this->department = $employee->getDepartment();
 
         return $this;
     }

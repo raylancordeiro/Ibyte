@@ -2,16 +2,17 @@
 
 namespace App\Controller;
 
+use App\Api\ApiProblemException;
 use App\Entity\Employee;
-
-use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
+use App\Form\EmployeeFormType;
+use Symfony\Component\HttpFoundation\Response;
 use Symfony\Component\Routing\Annotation\Route;
 use Symfony\Component\HttpFoundation\Request;
 
 /**
  * @Route("/employee", name="employee")
  */
-class EmployeeController extends AbstractController
+class EmployeeController extends BaseController
 {
     /**
      * @Route("/", name="index", methods={"GET"})
@@ -20,36 +21,69 @@ class EmployeeController extends AbstractController
     {
         $employees = $this->getDoctrine()->getRepository(Employee::class)->findAll();
 
-        return $this->json([
-            'data' => $employees
-        ]);
+        return $this->createApiResponse($employees);
     }
 
     /**
      * @Route("/{employeeId}", name="show", methods={"GET"})
      * @param $employeeId
+     * @return Response
      */
     public function show($employeeId)
     {
-        //TODO: Implementar
+        {
+            $employee = $this->getDoctrine()->getRepository(Employee::class)->find($employeeId);
+
+            return $this->createApiResponse($employee);
+        }
     }
 
     /**
      * @Route("/", name="create", methods={"POST"})
      * @param Request $request
+     * @return Response
      */
     public function create(Request $request)
     {
-        //TODO: Implementar
+        $form = $this->createForm(EmployeeFormType::class);
+        try {
+            $this->validateForm($form, $request);
+            $doctrine = $this->getDoctrine()->getManager();
+            $doctrine->persist($form->getData());
+            $doctrine->flush();
+            return $this->createApiResponse($form->getData(), 200);
+        } catch (ApiProblemException $exception) {
+            return $this->createApiException($form->getErrors(), $exception);
+        }
     }
 
     /**
      * @Route("/{employeeId}", name="update", methods={"PUT", "PATCH"})
-     * @param $employeeId
+     * @param Request $request
+     * @param int $employeeId
+     * @return Response
      */
-    public function update($employeeId)
+    public function update(Request $request, int $employeeId)
     {
-        //TODO: Implementar
+        $form = $this->createForm(EmployeeFormType::class);
+        /** @var Employee $employee */
+        $employee = $this->getDoctrine()->getRepository(Employee::class)->find($employeeId);
+        if (!$employee) {
+            return $this->createApiException('Employee not Found!', new \Exception('Not Found!', 404));
+        }
+        $doctrine = $this->getDoctrine()->getManager();
+        try {
+            $this->validateForm($form, $request);
+            /** @var Employee $data */
+            $data = $form->getData();
+            $employee->setUpdateData($data);
+            $doctrine->persist($employee);
+            $doctrine->flush();
+        } catch (ApiProblemException $exception) {
+            return $this->createApiException($form->getErrors(), $exception);
+        }
+
+        return $this->createApiResponse($employee, 200);
     }
 
     /**
@@ -58,6 +92,16 @@ class EmployeeController extends AbstractController
      */
     public function delete($employeeId)
     {
-        //TODO: Implementar
+        /** @var Employee $employee */
+        $employee = $this->getDoctrine()->getRepository(Employee::class)->find($employeeId);
+        $doctrine = $this->getDoctrine()->getManager();
+        if (!$employee) {
+            return $this->createApiException('Employee not Found!', new \Exception('Not Found!', 404));
+        }
+
+        $doctrine->remove($employee);
+        $doctrine->flush();
+        return $this->createApiResponse(['message' => 'Deleted employee!', 'data' => $employee], 200);
     }
 }
+
