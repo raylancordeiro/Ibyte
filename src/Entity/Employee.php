@@ -37,8 +37,8 @@ class Employee
     private $career;
 
     /**
-     * @ORM\Column(type="integer")
-     * @Assert\NotBlank
+     * @ORM\ManyToOne(targetEntity="App\Entity\Department", inversedBy="employees", cascade={"persist"})
+     * @ORM\JoinColumn(nullable=false)
      */
     private $department;
 
@@ -83,12 +83,20 @@ class Employee
         return $this;
     }
 
-    public function getDepartment(): ?int
+    /**
+     * @return int|Department
+     */
+    public function getDepartment()
     {
         return $this->department;
     }
 
-    public function setDepartment(int $department): self
+    /**
+     * @param Department $department
+     *
+     * @return Employee
+     */
+    public function setDepartment(Department $department)
     {
         $this->department = $department;
 

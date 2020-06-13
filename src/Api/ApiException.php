@@ -3,11 +3,12 @@
 namespace App\Api;
 
 use Symfony\Component\HttpFoundation\Response;
+use Symfony\Component\HttpKernel\Exception\HttpException;
 
 /**
  * A wrapper for holding data to be used for a application/problem+json response
  */
-class ApiException
+class ApiException extends HttpException
 {
     const TYPE_VALIDATION_ERROR = 'validation_error';
     const TYPE_INVALID_REQUEST_BODY_FORMAT = 'invalid_body_format';
@@ -65,5 +66,10 @@ class ApiException
     public function getTitle()
     {
         return $this->title;
+    }
+
+    public function getExtraData()
+    {
+        return $this->extraData;
     }
 }

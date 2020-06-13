@@ -9,10 +9,13 @@ use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 use Symfony\Component\Form\FormInterface;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\Response;
+use Symfony\Component\Serializer\Encoder\JsonEncoder;
+use Symfony\Component\Serializer\Serializer;
+use Symfony\Component\Serializer\Normalizer\AbstractNormalizer;
+use Symfony\Component\Serializer\Normalizer\ObjectNormalizer;
 
 class BaseController extends AbstractController
 {
-
     /**
      * Processa os dados recebidos e submete um formulário
      *
@@ -58,7 +61,6 @@ class BaseController extends AbstractController
         $this->processForm($request, $form);
         if (!$form->isValid()) {
             $this->throwApiProblemValidationException($form);
-            //TODO: AJEITAR
         }
     }
 
@@ -66,13 +68,18 @@ class BaseController extends AbstractController
      * Cria uma resposta da Exceção no formato Json
      *
      * @param string $message
-     * @param \Exception $exception
+     * @param ApiException $exception
      * @return Response
      */
-    protected function createApiException(string $message, \Exception $exception)
+    protected function createApiException(string $message, ApiException $exception)
     {
-        $code = $exception->getCode() === 0 ? 409 : $exception->getCode();
-        $json = $this->serialize(['error' => ['message' => $message, 'details' => $exception->getMessage()]]);
+        $code = $exception->getStatusCode() === 0 ? 409 : $exception->getStatusCode();
+        $json = $this->serialize([
+            'error' => [
+                'message' => empty($exception->getMessage()) ? $message : $exception->getMessage(),
+                'details' => $exception->getExtraData()
+            ]
+        ]);
         return new Response($json, $code, [
             'Content-Type' => 'application/json'
         ]);
@@ -111,8 +118,14 @@ class BaseController extends AbstractController
             $groups[] = 'deep';
         }
         $context->setGroups($groups);
+        $normalizer = new ObjectNormalizer();
+        $encoder = new JsonEncoder();
 
-        return $this->get('serializer')->serialize($data, $format, (array)$context);
+        $serializer = new Serializer([$normalizer], [$encoder]);
+        return $serializer->serialize($data, $format, [AbstractNormalizer::IGNORED_ATTRIBUTES => [
+            '__initializer__',
+            '__cloner__',
+            '__isInitialized__']]);
     }
 
     /**
@@ -127,7 +140,7 @@ class BaseController extends AbstractController
         $errors = $this->getErrorsFromForm($form);
         $apiProblem = new ApiException(Response::HTTP_UNPROCESSABLE_ENTITY, ApiException::TYPE_VALIDATION_ERROR);
         $apiProblem->set('errors', $errors);
-        throw new ApiProblemException($apiProblem);
+        throw $apiProblem;
     }
 
     /**

@@ -2,6 +2,7 @@
 
 namespace App\Controller;
 
+use App\Api\ApiException;
 use App\Api\ApiProblemException;
 use App\Entity\Employee;
 use App\Form\EmployeeFormType;
@@ -33,7 +34,9 @@ class EmployeeController extends BaseController
     {
         {
             $employee = $this->getDoctrine()->getRepository(Employee::class)->find($employeeId);
-
+            if (!$employee) {
+                return $this->createApiException('Employee not Found!', new ApiException(404));
+            }
             return $this->createApiResponse($employee);
         }
     }
@@ -52,8 +55,8 @@ class EmployeeController extends BaseController
             $doctrine->persist($form->getData());
             $doctrine->flush();
             return $this->createApiResponse($form->getData(), 200);
-        } catch (ApiProblemException $exception) {
-            return $this->createApiException($form->getErrors(), $exception);
+        } catch (ApiException $exception) {
+            return $this->createApiException('Invalid Form', $exception);
         }
     }
 
@@ -69,7 +72,7 @@ class EmployeeController extends BaseController
         /** @var Employee $employee */
         $employee = $this->getDoctrine()->getRepository(Employee::class)->find($employeeId);
         if (!$employee) {
-            return $this->createApiException('Employee not Found!', new \Exception('Not Found!', 404));
+            return $this->createApiException('Employee not Found!', new ApiException(404));
         }
         $doctrine = $this->getDoctrine()->getManager();
         try {
@@ -79,7 +82,7 @@ class EmployeeController extends BaseController
             $employee->setUpdateData($data);
             $doctrine->persist($employee);
             $doctrine->flush();
-        } catch (ApiProblemException $exception) {
+        } catch (ApiException $exception) {
             return $this->createApiException($form->getErrors(), $exception);
         }
 
@@ -96,7 +99,7 @@ class EmployeeController extends BaseController
         $employee = $this->getDoctrine()->getRepository(Employee::class)->find($employeeId);
         $doctrine = $this->getDoctrine()->getManager();
         if (!$employee) {
-            return $this->createApiException('Employee not Found!', new \Exception('Not Found!', 404));
+            return $this->createApiException('Employee not Found!', new ApiException(404));
         }
 
         $doctrine->remove($employee);
