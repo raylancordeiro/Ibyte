@@ -125,8 +125,8 @@ class EmployeeController extends BaseController
         }
 
         $departmentRepository = $this->getDoctrine()->getRepository(Department::class);
-
         $doctrine = $this->getDoctrine()->getManager();
+        $employeesCounter = $departmentsCounter = 0;
 
         foreach ($apiEmployees['data'] as $employee) {
 
@@ -141,6 +141,7 @@ class EmployeeController extends BaseController
                 $newDepartment->setName($employee['departament']);
                 $doctrine->persist($newDepartment);
                 $doctrine->flush();
+                $departmentsCounter++;
 
                 $newEmployee->setDepartment($newDepartment);
             } else {
@@ -149,9 +150,14 @@ class EmployeeController extends BaseController
 
             $doctrine->persist($newEmployee);
             $doctrine->flush();
+            $employeesCounter++;
         }
 
-        return $this->createApiResponse('success', 200);
+        return $this->createApiResponse([
+            'departments_imported' => $departmentsCounter,
+            'employees_imported' => $employeesCounter
+        ],
+            200);
     }
 }
 
