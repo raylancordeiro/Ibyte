@@ -4,8 +4,11 @@ namespace App\Controller;
 
 use App\Api\ApiException;
 use App\Api\ApiProblemException;
+use App\Entity\Department;
 use App\Entity\Employee;
 use App\Form\EmployeeFormType;
+use App\Services\ApiIntegrationService;
+use App\Services\ServiceUnavailableException;
 use Symfony\Component\HttpFoundation\Response;
 use Symfony\Component\Routing\Annotation\Route;
 use Symfony\Component\HttpFoundation\Request;
@@ -104,7 +107,51 @@ class EmployeeController extends BaseController
 
         $doctrine->remove($employee);
         $doctrine->flush();
-        return $this->createApiResponse(['message' => 'Deleted employee!', 'data' => $employee], 200);
+        return $this->createApiResponse(['message' => 'Deleted employee!', 'data' => []], 200);
+    }
+
+    /**
+     * @Route("/import", name="import", methods={"POST"})
+     * @param ApiIntegrationService $apiIntegrationService
+     * @return Response
+     */
+    public function import(ApiIntegrationService $apiIntegrationService)
+    {
+        try {
+            $apiEmployees = $apiIntegrationService->getEmployees();
+        } catch (ServiceUnavailableException $e) {
+            $exception = new ApiException($e->getStatus());
+            return $this->createApiException($e->getMessage(), $exception);
+        }
+
+        $departmentRepository = $this->getDoctrine()->getRepository(Department::class);
+
+        $doctrine = $this->getDoctrine()->getManager();
+
+        foreach ($apiEmployees['data'] as $employee) {
+
+            $newEmployee = new Employee();
+            $newEmployee->setFirstName($employee['first_name']);
+            $newEmployee->setLastName($employee['last_name']);
+            $newEmployee->setCareer($employee['career']);
+
+            $department = $departmentRepository->getDepartmentLikeName($employee['departament']);
+            if ($department === []) {
+                $newDepartment = new Department();
+                $newDepartment->setName($employee['departament']);
+                $doctrine->persist($newDepartment);
+                $doctrine->flush();
+
+                $newEmployee->setDepartment($newDepartment);
+            } else {
+                $newEmployee->setDepartment($department[0]);
+            }
+
+            $doctrine->persist($newEmployee);
+            $doctrine->flush();
+        }
+
+        return $this->createApiResponse('success', 200);
     }
 }
 

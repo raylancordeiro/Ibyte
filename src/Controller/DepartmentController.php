@@ -104,6 +104,6 @@ class DepartmentController extends BaseController
 
         $doctrine->remove($department);
         $doctrine->flush();
-        return $this->createApiResponse(['message' => 'Deleted department!', 'data' => $department], 200);
+        return $this->createApiResponse(['message' => 'Deleted department!', 'data' => []], 200);
     }
 }

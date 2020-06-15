@@ -76,6 +76,7 @@ class BaseController extends AbstractController
         $code = $exception->getStatusCode() === 0 ? 409 : $exception->getStatusCode();
         $json = $this->serialize([
             'error' => [
+                'status' => $code,
                 'message' => empty($exception->getMessage()) ? $message : $exception->getMessage(),
                 'details' => $exception->getExtraData()
             ]
@@ -94,7 +95,7 @@ class BaseController extends AbstractController
      */
     protected function createApiResponse($data, $statusCode = 200)
     {
-        $json = $this->serialize($data);
+        $json = $this->serialize(['status' => $statusCode, 'data' => $data]);
         return new Response($json, $statusCode, [
             'Content-Type' => 'application/json'
         ]);
