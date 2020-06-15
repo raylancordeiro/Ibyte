@@ -53,7 +53,7 @@ class DepartmentController extends BaseController
             $doctrine = $this->getDoctrine()->getManager();
             $doctrine->persist($form->getData());
             $doctrine->flush();
-            return $this->createApiResponse($form->getData(), 200);
+            return $this->createApiResponse($form->getData(), 201);
         } catch (ApiException $exception) {
             return $this->createApiException($form->getErrors(), $exception);
         }
