@@ -111,6 +111,24 @@ class EmployeeController extends BaseController
     }
 
     /**
+     * @Route("/department/{departmentId}", name="employees_by_department", methods={"GET"})
+     * @param $departmentId
+     * @return Response
+     */
+    public function getEmployeesByDepartment($departmentId)
+    {
+        $department = $this->getDoctrine()->getRepository(Department::class)->find($departmentId);
+        if (empty($department)) {
+            new ApiException(404);
+            return $this->createApiException('Department not Found', new ApiException(404));
+        }
+        $employees = $this->getDoctrine()->getRepository(Employee::class)
+            ->findBy(['department' => $departmentId]);
+
+        return $this->createApiResponse($employees);
+    }
+
+    /**
      * @Route("/import", name="import", methods={"POST"})
      * @param ApiIntegrationService $apiIntegrationService
      * @return Response
